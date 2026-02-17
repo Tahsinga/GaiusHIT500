@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "C:/Users/TASHINGA/Desktop/PROJECT/hit300/.venv/Scripts/python.exe",
+    "python.analysis.extraPaths": [
+        "C:/Users/TASHINGA/Desktop/PROJECT/hit300/.venv/Lib/site-packages"
+    ],
+    "python.analysis.indexing": true,
+    "python-envs.pythonProjects": []
+}

@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HIT500 Real-Time Monitor</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --dark-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent-color: #38bdf8;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border-color: rgba(148, 163, 184, 0.2);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: var(--dark-bg);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-color);
+      border-radius: 4px;
+    }
+    
+    /* Header */
+    .glass-header {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.5rem 0;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .glass-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--primary-gradient);
+      opacity: 0.05;
+      z-index: -1;
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--primary-gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .title-container h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      line-height: 1.2;
+    }
+    /* Sidebar */
+    .app-layout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .sidebar {
+      width: 320px;
+      background: rgba(15,23,42,0.6);
+      border-right: 1px solid var(--border-color);
+      padding: 1rem 1rem 0.5rem 1rem;
+      border-radius: 5px;
+      border-top: solid rgb(94, 82, 82) 1px;
+      /* let sidebar size to content to avoid large empty space under buttons */
+      height: 410px;
+      max-height: calc(100vh - 120px);
+      position: sticky;
+      top: 16px;
+      overflow: auto;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.5);
+    }
+
+    .sidebar h4 {
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+
+    .room-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .room-btn {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .room-btn i { color: var(--accent-color); min-width: 18px; }
+
+    .room-btn:hover {
+      background: rgba(56,189,248,0.06);
+      border-color: rgba(56,189,248,0.12);
+    }
+
+    /* Online / offline styles for room buttons */
+    .room-btn.online {
+      background: linear-gradient(90deg, rgba(16,185,129,0.08), rgba(16,185,129,0.04));
+      border-color: rgba(16,185,129,0.12);
+      color: #bbf7d0;
+    }
+
+    .room-btn.offline {
+      background: linear-gradient(90deg, rgba(148,163,184,0.04), rgba(148,163,184,0.02));
+      border-color: rgba(148,163,184,0.06);
+      color: var(--text-secondary);
+    }
+
+    .room-btn.active {
+      background: linear-gradient(90deg, rgba(56,189,248,0.12), rgba(56,189,248,0.06));
+      border-color: rgba(56,189,248,0.18);
+      box-shadow: inset 0 0 0 1px rgba(56,189,248,0.02);
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .app-layout { display: block; }
+    }
+    
+    .title-container p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+    
+    /* Status indicator */
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .live-pulse {
+      width: 12px;
+      height: 12px;
+      background: var(--success-color);
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s infinite;
+    }
+    
+    .live-pulse::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--success-color);
+      opacity: 0.4;
+      animation: pulse-ring 2s infinite;
+    }
+
+    /* Live status text styles */
+    .live-status {
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+    }
+
+    .live-status.active {
+      color: #16a34a; /* green */
+      background: rgba(16,163,127,0.06);
+      border: 1px solid rgba(16,163,127,0.08);
+    }
+
+    .live-status.inactive {
+      color: #ef4444; /* red */
+      background: rgba(239,68,68,0.04);
+      border: 1px solid rgba(239,68,68,0.06);
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.4; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    
+    /* Stats cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(8px);
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      max-width: 300px;
+      width: 100%;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border-color: var(--accent-color);
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-gradient);
+    }
+    
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .stat-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .stat-content-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 0.5rem;
+    }
+
+    .stat-label {
+      margin-left: 0;
+    }
+    
+    .stat-card:nth-child(1) .stat-icon {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-color);
+    }
+    
+    .stat-card:nth-child(2) .stat-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning-color);
+    }
+    
+    .stat-card:nth-child(3) .stat-icon {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-color);
+    }
+    
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .stat-timestamp {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+    
+    /* Main content */
+    .dashboard-content {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 992px) {
+      .dashboard-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Charts */
+    .chart-container {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      margin-bottom: 1.5rem;
+      height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .chart-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .chart-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .chart-action-btn {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    
+    .chart-action-btn:hover {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+    }
+    
+    .chart-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .chart-timestamp {
+      text-align: center;
+      padding: 12px 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-top: 1px solid var(--border-color);
+      margin-top: 12px;
+    }
+
+    .chart-timestamp p {
+      margin: 0;
+    }
+
+    .chart-timestamp span {
+      color: var(--accent-color);
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+    }
+    
+    /* Data table */
+    .data-table-container {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .table-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table-header h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+    
+    .table-wrapper {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table thead {
+      background: rgba(15, 23, 42, 0.7);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .data-table th {
+      padding: 1rem 1.5rem;
+      text-align: left;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.2s;
+    }
+    
+    .data-table tbody tr:hover {
+      background: rgba(56, 189, 248, 0.05);
+    }
+    
+    .data-table td {
+      padding: 1rem 1.5rem;
+      font-size: 0.95rem;
+    }
+    
+    .time-cell {
+      color: var(--text-secondary);
+      font-family: 'Courier New', monospace;
+    }
+    
+    .temp-c-cell {
+      color: var(--danger-color);
+      font-weight: 600;
+    }
+    
+    .temp-f-cell {
+      color: var(--warning-color);
+      font-weight: 600;
+    }
+    
+    .bpm-cell {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 1.5rem 0;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 2rem;
+    }
+    
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.5s ease forwards;
+    }
+    
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    /* Loading animation */
+    .loading-shimmer {
+      background: linear-gradient(90deg, 
+        rgba(30, 41, 59, 0.4) 25%, 
+        rgba(56, 189, 248, 0.1) 50%, 
+        rgba(30, 41, 59, 0.4) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    /* Custom: Stronger modal backdrop for recent results */
+    .modal-backdrop.show {
+      opacity: 0.85 !important;
+      background-color: #1e293b !important;
+    }
+
+    /* Custom: Move the recent results modal up by 100px from the bottom */
+    #recentResultsModal .modal-dialog {
+      margin-bottom: 100px;
+    }
+
+    /* Optionally, add a shadow to the modal for more separation */
+    #recentResultsModal .modal-content {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="glass-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <div class="title-container">
+            <h1>Real-Time Monitor</h1>
+            <!-- <p>Live sensor data streaming from Arduino</p> -->
+          </div>
+        </div>
+        <div class="status-indicator">
+          <div class="live-pulse"></div>
+          <span>Live Data Streaming</span>
+          <span id="selectedRoom" style="margin-left:10px;color:var(--text-secondary);font-weight:600">Room 1</span>
+          <span id="liveStatus" class="live-status" style="margin-left:10px">--</span>
+        </div>
+        <div class="d-flex align-items-center ms-3">
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#recentResultsModal">
+            View Recent Results
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container-fluid py-1" style="margin: 20px; max-width:100vw;min-height:100vh;height:100vh;overflow-x:hidden;display:flex;flex-direction:column;">
+    <!-- Monitor Assignment Modal -->
+    <div class="modal fade" id="assignMonitorModal" tabindex="-1" aria-labelledby="assignMonitorLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content" style="background:var(--card-bg);color:var(--text-primary)">
+          <div class="modal-header">
+            <h5 class="modal-title" id="assignMonitorLabel">Assign Monitor to Room</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="assignMonitorForm">
+              <div class="mb-3">
+                <label for="monitorSelect" class="form-label">Monitor</label>
+                <select id="monitorSelect" class="form-select" required></select>
+              </div>
+              <div class="mb-3">
+                <label for="roomSelect" class="form-label">Room</label>
+                <select id="roomSelect" class="form-select" required>
+                  <option value="Room 1">Room 1</option>
+                  <option value="Room 2">Room 2</option>
+                  <option value="Room 3">Room 3</option>
+                  <option value="Room 4">Room 4</option>
+                  <option value="Room 5">Room 5</option>
+                  <option value="Room 6">Room 6</option>
+                  <option value="Room 7">Room 7</option>
+                  <option value="Room 8">Room 8</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="patientNameInput" class="form-label">Patient Name</label>
+                <input type="text" id="patientNameInput" class="form-control" placeholder="Enter patient name">
+              </div>
+              <button type="submit" class="btn btn-primary">Assign</button>
+            </form>
+            <div id="assignResult" class="mt-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="app-layout" style="align-items:stretch;flex:1 1 auto;min-height:0; margin-top: 15px;">
+      <aside class="sidebar">
+        <button class="btn btn-sm btn-info mb-2 w-100" onclick="showAssignMonitorModal()"><i class="fas fa-exchange-alt"></i> Assign Monitor</button>
+        <h4>Rooms</h4>
+        <div class="room-list">
+          <button class="room-btn active" data-room="Room 1"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 1</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 2"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 2</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 3"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 3</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 4"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 4</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 5"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 5</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 6"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 6</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 7"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 7</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+          <button class="room-btn" data-room="Room 8"><i class="fas fa-door-open"></i> <div style="flex:1;text-align:left"><div>Room 8</div><div class="room-patient" style="font-size:0.75rem;opacity:0.7;margin-top:0.1rem">—</div></div> <span class="room-state" style="font-size:0.85rem">—</span></button>
+        </div>
+      </aside>
+      <div class="main-area" style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card slide-in">
+        <div class="stat-icon">
+          <i class="fas fa-thermometer-half"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-content-row">
+            <div class="stat-value" id="tempC">--</div>
+          </div>
+          <div class="stat-label">
+            <span>Temperature (°C)</span>
+            <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Current temperature in Celsius"></i>
+          </div>
+          <div class="stat-timestamp" id="tsC">Last updated: --</div>
+        </div>
+      </div>
+      <div class="stat-card slide-in" style="animation-delay: 0.1s">
+        <div class="stat-icon">
+          <i class="fas fa-thermometer"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-content-row">
+            <div class="stat-value" id="tempF">--</div>
+          </div>
+          <div class="stat-label">
+            <span>Temperature (°F)</span>
+            <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Current temperature in Fahrenheit"></i>
+          </div>
+          <div class="stat-timestamp" id="tsF">Last updated: --</div>
+        </div>
+      </div>
+      <div class="stat-card slide-in" style="animation-delay: 0.2s">
+        <div class="stat-icon">
+          <i class="fas fa-heart"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-content-row">
+            <div class="stat-value" id="bpmVal">--</div>
+          </div>
+          <div class="stat-label">
+            <span>Heart Rate (BPM)</span>
+            <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Current heart rate in beats per minute"></i>
+          </div>
+          <div class="stat-timestamp" id="tsBpm">Last updated: --</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphs Row: Side by Side -->
+    <div class="d-flex flex-row mb-1 flex-grow-1" style="justify-content:center;align-items:stretch;min-height:320px;gap:8px;">
+      <div class="chart-container flex-fill" style="min-width:320px;max-width:46%;">
+        <div class="chart-header">
+          <h3 class="chart-title">Temperature Trend</h3>
+          <div class="chart-actions">
+            <button class="chart-action-btn" id="tempChartZoomIn">
+              <i class="fas fa-search-plus"></i>
+            </button>
+            <button class="chart-action-btn" id="tempChartZoomOut">
+              <i class="fas fa-search-minus"></i>
+            </button>
+            <button class="chart-action-btn" id="tempChartReset">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="tempChart"></canvas>
+        </div>
+        <div class="chart-timestamp">
+          <p>Last Update: <span id="tempChartTime">--:--:--</span></p>
+        </div>
+      </div>
+      <div class="chart-container flex-fill" style="min-width:320px;max-width:46%;">
+        <div class="chart-header">
+          <h3 class="chart-title">Heart Rate Trend</h3>
+          <div class="chart-actions">
+            <button class="chart-action-btn" id="bpmChartZoomIn">
+              <i class="fas fa-search-plus"></i>
+            </button>
+            <button class="chart-action-btn" id="bpmChartZoomOut">
+              <i class="fas fa-search-minus"></i>
+            </button>
+            <button class="chart-action-btn" id="bpmChartReset">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="bpmChart"></canvas>
+        </div>
+        <div class="chart-timestamp">
+          <p>Last Update: <span id="bpmChartTime">--:--:--</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for recent results -->
+    <div class="modal fade" id="recentResultsModal" tabindex="-1" aria-labelledby="recentResultsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background:var(--card-bg);color:var(--text-primary)">
+          <div class="modal-header">
+            <h5 class="modal-title" id="recentResultsModalLabel">Recent Data Stream</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Temp (°C)</th>
+                    <th>Temp (°F)</th>
+                    <th>BPM</th>
+                  </tr>
+                </thead>
+                <tbody id="dataRows">
+                  <tr>
+                    <td colspan="4">
+                      <div class="empty-state">
+                        <i class="fas fa-database"></i>
+                        <p>Waiting for data stream to begin...</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" style="flex-shrink:0;">
+    <div class="container">
+      <p>HIT500 Monitoring System • Data updates every 5 seconds • Last updated: <span id="lastUpdateTime">--</span></p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0/dist/chartjs-plugin-zoom.min.js"></script>
+  
+  <script>
+    // Sidebar room selection handling
+    (function() {
+      const roomButtons = document.querySelectorAll('.room-btn');
+      let currentRoom = 'Room 1';
+      let lastLoadedRoom = null;
+      // map room name -> patient id (stored on window for global access)
+      window.roomPatientIds = window.roomPatientIds || {};
+      async function setActive(btn) {
+        const room = btn.dataset.room;
+        // If clicking the same room repeatedly, do not clear or reload unnecessarily
+        if (lastLoadedRoom === room) {
+          // still mark active visually
+          roomButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          return;
+        }
+
+        roomButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRoom = room;
+        const sel = document.getElementById('selectedRoom');
+        if (sel) sel.textContent = currentRoom;
+        console.log('Active room set to', currentRoom);
+
+        // Show loading status while checking
+        setLiveStatus(false, true);
+
+        // Load recent history for this room (at least 8 readings)
+        const patientId = (window.roomPatientIds && window.roomPatientIds[room]) || null;
+        await loadRoomHistory(currentRoom, 8, patientId);
+        lastLoadedRoom = room;
+        
+        // After loading, check and set the actual status
+        try {
+          const query = patientId ? `&patient_id=${encodeURIComponent(patientId)}` : '';
+          const resp = await fetch(`/api/latest?room=${encodeURIComponent(currentRoom)}${query}`);
+          if (resp && resp.ok) {
+            const data = await resp.json();
+            const hasAny = data && (data.temp_c !== undefined || data.temp_f !== undefined || data.bpm !== undefined);
+            setLiveStatus(!!hasAny, false);
+          } else {
+            setLiveStatus(false, false);
+          }
+        } catch (e) {
+          setLiveStatus(false, false);
+        }
+      }
+      roomButtons.forEach(btn => {
+        btn.addEventListener('click', () => setActive(btn));
+      });
+      // ensure first is active
+      if (roomButtons.length) setActive(roomButtons[0]);
+      // Expose currentRoom globally for other scripts
+      window.currentRoom = () => currentRoom;
+      // Expose access to patient id mapping
+      window.getRoomPatientId = (room) => (window.roomPatientIds && window.roomPatientIds[room]) || null;
+    })();
+    
+    // Update room button visuals based on whether that room currently has data
+    function setRoomStatus(btn, isActive) {
+      btn.classList.remove('online', 'offline');
+      const stateEl = btn.querySelector('.room-state');
+      if (isActive) {
+        btn.classList.add('online');
+        if (stateEl) stateEl.textContent = 'Active';
+      } else {
+        btn.classList.add('offline');
+        if (stateEl) stateEl.textContent = 'Deactivated';
+      }
+    }
+
+    // Update the header live-status text and color
+    function setLiveStatus(isActive, isLoading = false) {
+      const el = document.getElementById('liveStatus');
+      if (!el) return;
+      el.classList.remove('active', 'inactive');
+      if (isLoading) {
+        el.classList.add('active');
+        el.textContent = 'Loading...';
+      } else if (isActive) {
+        el.classList.add('active');
+        el.textContent = 'Active';
+      } else {
+        el.classList.add('inactive');
+        el.textContent = 'Deactivated';
+      }
+    }
+
+    async function updateRoomStatuses() {
+      const buttons = Array.from(document.querySelectorAll('.room-btn'));
+      
+      // Fetch room patient names/ids
+      let roomPatients = {};
+      window.roomPatientIds = window.roomPatientIds || {};
+      try {
+        const roomsResp = await fetch('/api/rooms');
+        if (roomsResp.ok) {
+          const rooms = await roomsResp.json();
+          rooms.forEach(r => {
+            roomPatients[r.name] = r.patient_name || 'No patient';
+            window.roomPatientIds[r.name] = r.patient_id || null;
+          });
+        }
+      } catch (e) {
+        console.log('Could not fetch room info');
+      }
+      
+      // Fire all fetches in parallel for speed
+      const checks = buttons.map(btn => {
+        const room = btn.dataset.room;
+        return fetch(`/api/latest?room=${encodeURIComponent(room)}`)
+          .then(resp => ({ btn, resp }))
+          .catch(err => ({ btn, resp: null, err }));
+      });
+
+      const results = await Promise.all(checks);
+      // Process results
+      await Promise.all(results.map(async ({ btn, resp }) => {
+        let isOnline = false;
+        try {
+          if (!resp || !resp.ok) {
+            setRoomStatus(btn, false);
+          } else {
+            const data = await resp.json();
+            const hasAny = data && (data.temp_c !== undefined || data.temp_f !== undefined || data.bpm !== undefined);
+            isOnline = !!hasAny;
+            setRoomStatus(btn, isOnline);
+          }
+            // Update patient name display
+            const patientElem = btn.querySelector('.room-patient');
+          if (patientElem) {
+            const roomName = btn.dataset.room;
+            // Only show patient name if room is online/active
+            if (isOnline) {
+              patientElem.textContent = roomPatients[roomName] || 'No patient';
+            } else {
+              patientElem.textContent = '';
+            }
+          }
+        } catch (e) {
+          setRoomStatus(btn, false);
+        }
+      }));
+      // Update header live-status based on selected room
+      try {
+        const selectedBtn = document.querySelector('.room-btn.active');
+        if (selectedBtn) {
+          const isOnline = selectedBtn.classList.contains('online');
+          setLiveStatus(isOnline);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Kick off status checks on load and refresh every 5s (parallelized)
+    document.addEventListener('DOMContentLoaded', () => {
+      updateRoomStatuses();
+      setInterval(updateRoomStatuses, 5000);
+    });
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    });
+
+    // Chart and data management
+    const MAX_ROWS = 20;
+    // How many recent rows to show in the live data table
+    const TABLE_MAX_ROWS = 6;
+    let dataHistory = [];
+    let tempChart, bpmChart;
+    let lastUpdateTime = null;
+
+    // Show a friendly empty state when a room has no streaming device
+    function showNoDataForRoom(room) {
+      document.getElementById('tempC').textContent = '--';
+      document.getElementById('tempF').textContent = '--';
+      document.getElementById('bpmVal').textContent = '--';
+      document.getElementById('tsC').textContent = 'No system in this room';
+      document.getElementById('tsF').textContent = '';
+      document.getElementById('tsBpm').textContent = '';
+      const tempTime = document.getElementById('tempChartTime'); if (tempTime) tempTime.textContent = '--:--:--';
+      const bpmTime = document.getElementById('bpmChartTime'); if (bpmTime) bpmTime.textContent = '--:--:--';
+      document.getElementById('lastUpdateTime').textContent = '--';
+
+      // Clear charts
+      if (tempChart) {
+        tempChart.data.labels = [];
+        tempChart.data.datasets[0].data = [];
+        tempChart.update();
+      }
+      if (bpmChart) {
+        bpmChart.data.labels = [];
+        bpmChart.data.datasets[0].data = [];
+        bpmChart.update();
+      }
+
+      // Replace table contents with a modern empty state
+      const tbody = document.getElementById('dataRows');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="fas fa-exclamation-circle"></i>
+              <p style="font-weight:700;color:var(--text-primary);font-size:1.05rem">There is no patient data for <strong>${room}</strong>.</p>
+              <p style="font-size:0.9rem;color:var(--text-secondary)">Connect a device with the matching monitor ID to start streaming.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    // Clear charts, table and history when switching rooms so displays are room-specific
+    function clearRoomDisplay(room) {
+      // reset in-memory history
+      dataHistory = [];
+
+      // clear table to waiting state
+      const tbody = document.getElementById('dataRows');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4">
+            <div class="empty-state">
+              <i class="fas fa-database"></i>
+              <p>Waiting for data stream to begin for <strong>${room}</strong>...</p>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      // reset stat cards
+      document.getElementById('tempC').textContent = '--';
+      document.getElementById('tempF').textContent = '--';
+      document.getElementById('bpmVal').textContent = '--';
+      document.getElementById('tsC').textContent = 'Last updated: --';
+      document.getElementById('tsF').textContent = '';
+      document.getElementById('tsBpm').textContent = '';
+      document.getElementById('lastUpdateTime').textContent = '--';
+
+      // clear charts
+      if (tempChart) {
+        tempChart.data.labels = [];
+        tempChart.data.datasets[0].data = [];
+        tempChart.update();
+      }
+      if (bpmChart) {
+        bpmChart.data.labels = [];
+        bpmChart.data.datasets[0].data = [];
+        bpmChart.update();
+      }
+    }
+
+    // Load the last N readings for a room and populate UI (does not clear unless necessary)
+    async function loadRoomHistory(room, limit = 8, patientId = null) {
+      // show waiting state while fetching
+      clearRoomDisplay(room);
+      try {
+        const pid = patientId ? `&patient_id=${encodeURIComponent(patientId)}` : '';
+        const resp = await fetch(`/api/history?room=${encodeURIComponent(room)}&limit=${limit}${pid}`);
+        if (!resp.ok) {
+          showNoDataForRoom(room);
+          return;
+        }
+        const arr = await resp.json();
+        if (!Array.isArray(arr) || arr.length === 0) {
+          showNoDataForRoom(room);
+          return;
+        }
+
+        // Populate history and charts with returned readings (arr is chronological oldest->newest)
+        dataHistory = [];
+        // clear charts first
+        if (tempChart) {
+          tempChart.data.labels = [];
+          tempChart.data.datasets[0].data = [];
+        }
+        if (bpmChart) {
+          bpmChart.data.labels = [];
+          bpmChart.data.datasets[0].data = [];
+        }
+
+        const tbody = document.getElementById('dataRows');
+        tbody.innerHTML = '';
+
+        for (const item of arr) {
+          const ts = item.timestamp ? new Date(item.timestamp) : new Date();
+          const time = ts.toLocaleTimeString([], { hour12: false });
+          const tC = item.temp_c !== null ? parseFloat(item.temp_c) : null;
+          const tF = item.temp_f !== null ? parseFloat(item.temp_f) : null;
+          const bpm = item.bpm !== null ? parseInt(item.bpm) : null;
+          // append to table (oldest first)
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="time-cell">${time}</td>
+            <td class="temp-c-cell">${tC !== null ? tC + ' °C' : '--'}</td>
+            <td class="temp-f-cell">${tF !== null ? tF + ' °F' : '--'}</td>
+            <td class="bpm-cell">${bpm !== null ? bpm + ' BPM' : '--'}</td>
+          `;
+          tbody.appendChild(tr);
+
+          // chart labels and data
+          if (tempChart) {
+            tempChart.data.labels.push(time);
+            tempChart.data.datasets[0].data.push(tC !== null ? Number(tC) : null);
+          }
+          if (bpmChart) {
+            bpmChart.data.labels.push(time);
+            bpmChart.data.datasets[0].data.push(bpm !== null ? Number(bpm) : null);
+          }
+        }
+
+        // Trim to MAX_ROWS
+        if (tempChart) {
+          while (tempChart.data.labels.length > MAX_ROWS) {
+            tempChart.data.labels.shift();
+            tempChart.data.datasets[0].data.shift();
+          }
+          tempChart.update();
+        }
+        if (bpmChart) {
+          while (bpmChart.data.labels.length > MAX_ROWS) {
+            bpmChart.data.labels.shift();
+            bpmChart.data.datasets[0].data.shift();
+          }
+          bpmChart.update();
+        }
+
+        // Update stat cards with latest reading
+        const latest = arr[arr.length - 1];
+        updateLiveDisplay({
+          tempC: latest.temp_c !== null ? parseFloat(latest.temp_c) : null,
+          tempF: latest.temp_f !== null ? parseFloat(latest.temp_f) : null,
+          bpm: latest.bpm !== null ? parseInt(latest.bpm) : null
+        });
+      } catch (err) {
+        console.error('History load error:', err);
+        showNoDataForRoom(room);
+      }
+    }
+
+    // Initialize charts with modern styling
+    function initCharts() {
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+      
+      const gridColor = 'rgba(148, 163, 184, 0.1)';
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 750,
+          easing: 'easeOutQuart'
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'x',
+            }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        },
+        scales: {
+          y: {
+            grid: {
+              color: gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              padding: 8
+            },
+            beginAtZero: false
+          },
+          x: {
+            grid: {
+              color: gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              maxRotation: 0
+            }
+          }
+        },
+        elements: {
+          point: {
+            radius: 0,
+            hoverRadius: 6
+          },
+          line: {
+            tension: 0.4,
+            borderWidth: 3
+          }
+        }
+      };
+
+      // Temperature Chart
+      const tempCtx = document.getElementById('tempChart').getContext('2d');
+      tempChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Temperature (°C)',
+              data: [],
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              fill: true,
+              pointBackgroundColor: '#ef4444',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+            }
+          ]
+        },
+        options: {
+          ...chartOptions,
+          plugins: {
+            ...chartOptions.plugins,
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              borderColor: '#38bdf8',
+              borderWidth: 1,
+              titleColor: '#f1f5f9',
+              bodyColor: '#94a3b8',
+              padding: 12,
+              cornerRadius: 8
+            }
+          }
+        }
+      });
+
+      // BPM Chart
+      const bpmCtx = document.getElementById('bpmChart').getContext('2d');
+      bpmChart = new Chart(bpmCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Heart Rate (BPM)',
+              data: [],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              fill: true,
+              pointBackgroundColor: '#38bdf8',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+            }
+          ]
+        },
+        options: {
+          ...chartOptions,
+          plugins: {
+            ...chartOptions.plugins,
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              borderColor: '#38bdf8',
+              borderWidth: 1,
+              titleColor: '#f1f5f9',
+              bodyColor: '#94a3b8',
+              padding: 12,
+              cornerRadius: 8
+            }
+          }
+        }
+      });
+
+      // Chart control buttons
+      document.getElementById('tempChartZoomIn').addEventListener('click', () => {
+        tempChart.zoom(1.1);
+      });
+      
+      document.getElementById('tempChartZoomOut').addEventListener('click', () => {
+        tempChart.zoom(0.9);
+      });
+      
+      document.getElementById('tempChartReset').addEventListener('click', () => {
+        tempChart.resetZoom();
+      });
+      
+      document.getElementById('bpmChartZoomIn').addEventListener('click', () => {
+        bpmChart.zoom(1.1);
+      });
+      
+      document.getElementById('bpmChartZoomOut').addEventListener('click', () => {
+        bpmChart.zoom(0.9);
+      });
+      
+      document.getElementById('bpmChartReset').addEventListener('click', () => {
+        bpmChart.resetZoom();
+      });
+    }
+
+    // Add new data row to table
+    function addDataRow(time, tempC, tempF, bpm) {
+      const entry = { time, tempC, tempF, bpm, timestamp: new Date() };
+      dataHistory.unshift(entry);
+      
+      if (dataHistory.length > MAX_ROWS) {
+        dataHistory.pop();
+      }
+
+      // Update table
+      const tbody = document.getElementById('dataRows');
+      
+      // Remove empty state if present
+      if (tbody.children.length === 1 && tbody.children[0].children.length === 1) {
+        tbody.innerHTML = '';
+      }
+      
+      // Create new row with animation
+      const tr = document.createElement('tr');
+      tr.style.animation = 'slideIn 0.5s ease forwards';
+      tr.style.opacity = '0';
+      
+      tr.innerHTML = `
+        <td class="time-cell">${time}</td>
+        <td class="temp-c-cell">${tempC || tempC === 0 ? tempC + ' °C' : '--'}</td>
+        <td class="temp-f-cell">${tempF || tempF === 0 ? tempF + ' °F' : '--'}</td>
+        <td class="bpm-cell">${bpm || bpm === 0 ? bpm + ' BPM' : '--'}</td>
+      `;
+      
+      tbody.insertBefore(tr, tbody.firstChild);
+      
+      // Remove oldest row if we exceed table max rows (show only recent values)
+      if (tbody.children.length > TABLE_MAX_ROWS) {
+        tbody.removeChild(tbody.lastChild);
+      }
+
+      // Update charts - use full time string (already in 24-hour format)
+      const timeLabel = time || new Date().toLocaleTimeString([], { hour12: false });
+      
+      // Temperature chart
+      tempChart.data.labels.unshift(timeLabel);
+      if (tempChart.data.labels.length > MAX_ROWS) tempChart.data.labels.pop();
+      
+      tempChart.data.datasets[0].data.unshift(tempC ? Number(tempC) : null);
+      if (tempChart.data.datasets[0].data.length > MAX_ROWS) {
+        tempChart.data.datasets[0].data.pop();
+      }
+      
+      // BPM chart
+      bpmChart.data.labels.unshift(timeLabel);
+      if (bpmChart.data.labels.length > MAX_ROWS) bpmChart.data.labels.pop();
+      
+      bpmChart.data.datasets[0].data.unshift(bpm ? Number(bpm) : null);
+      if (bpmChart.data.datasets[0].data.length > MAX_ROWS) {
+        bpmChart.data.datasets[0].data.pop();
+      }
+      
+      // Update charts with animation
+      tempChart.update('none');
+      bpmChart.update('none');
+    }
+
+    // Fetch latest data from API
+    async function fetchLatest() {
+      try {
+        // Fetch actual data from the API endpoint
+        // Get current room and fetch data for that room
+        const room = window.currentRoom ? window.currentRoom() : 'Room 1';
+        const patientId = (window.getRoomPatientId && window.getRoomPatientId(room)) || null;
+        const pid = patientId ? `&patient_id=${encodeURIComponent(patientId)}` : '';
+        const response = await fetch(`/api/latest?room=${encodeURIComponent(room)}${pid}`);
+        // If server returns non-JSON or not found, handle gracefully
+        if (!response.ok) {
+          console.warn('No data for', room, 'status:', response.status);
+          showNoDataForRoom(room);
+          return;
+        }
+        const apiData = await response.json();
+        console.log('API Data:', apiData);
+        // If response JSON doesn't contain sensor fields, treat as no-data
+        const hasAny = apiData && (apiData.temp_c !== undefined || apiData.temp_f !== undefined || apiData.bpm !== undefined);
+        if (!hasAny) {
+          showNoDataForRoom(room);
+          return;
+        }
+        
+        // Convert API data to chart format - ensure proper number conversion
+        const mockData = {
+          tempC: apiData.temp_c ? parseFloat(apiData.temp_c) : null,
+          tempF: apiData.temp_f ? parseFloat(apiData.temp_f) : null,
+          bpm: apiData.bpm ? parseInt(apiData.bpm) : null
+        };
+        
+        console.log('Converted Data:', mockData);
+        
+        // Update last update time
+        lastUpdateTime = new Date();
+        document.getElementById('lastUpdateTime').textContent = lastUpdateTime.toLocaleTimeString();
+        
+        // Update chart timestamps with real-time
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        document.getElementById('tempChartTime').textContent = timeString;
+        document.getElementById('bpmChartTime').textContent = timeString;
+        
+        // Update live display
+        updateLiveDisplay(mockData);
+        // Mark live status active for selected room
+        setLiveStatus(true);
+        
+        // Add to history - add every update, regardless of value change
+        if (mockData.tempC !== null || mockData.tempF !== null || mockData.bpm !== null) {
+          // Use 24-hour format to avoid AM/PM tokens and ensure consistent labels
+          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+          // Always add data to the graph, even if values haven't changed
+          addDataRow(time, mockData.tempC, mockData.tempF, mockData.bpm);
+        }
+      } catch (e) {
+        console.error('Fetch error:', e);
+        // Show error / no-data in UI and set header to inactive
+        const room = window.currentRoom ? window.currentRoom() : 'Room 1';
+        showNoDataForRoom(room);
+        setLiveStatus(false);
+      }
+    }
+
+    // Update live display with new data
+    function updateLiveDisplay(data) {
+      // Update temperature in Celsius
+      if (data.tempC !== null) {
+        const tempCElement = document.getElementById('tempC');
+        tempCElement.textContent = data.tempC.toFixed(1) + ' °C';
+        document.getElementById('tsC').textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        
+        // Add animation effect
+        tempCElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+          tempCElement.style.transform = 'scale(1)';
+        }, 300);
+      }
+      
+      // Update temperature in Fahrenheit
+      if (data.tempF !== null) {
+        const tempFElement = document.getElementById('tempF');
+        tempFElement.textContent = data.tempF.toFixed(1) + ' °F';
+        document.getElementById('tsF').textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        
+        // Add animation effect
+        tempFElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+          tempFElement.style.transform = 'scale(1)';
+        }, 300);
+      }
+      
+      // Update BPM
+      if (data.bpm !== null) {
+        const bpmElement = document.getElementById('bpmVal');
+        bpmElement.textContent = data.bpm + ' BPM';
+        document.getElementById('tsBpm').textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        
+        // Add animation effect
+        bpmElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+          bpmElement.style.transform = 'scale(1)';
+        }, 300);
+      }
+      // also set header live indicator to active when we updated values
+      setLiveStatus(true);
+    }
+
+    // Generate mock data for demonstration
+    function generateMockData() {
+      // Base values with slight random variations
+      const baseTempC = 36.5 + (Math.random() * 2 - 1); // 35.5-37.5°C
+      const baseBPM = 72 + (Math.random() * 20 - 10); // 62-82 BPM
+      
+      // Occasionally simulate "events" (10% chance)
+      const hasEvent = Math.random() < 0.1;
+      
+      return {
+        tempC: hasEvent ? baseTempC + (Math.random() * 3) : baseTempC,
+        tempF: hasEvent ? (baseTempC + (Math.random() * 3)) * 9/5 + 32 : baseTempC * 9/5 + 32,
+        bpm: hasEvent ? baseBPM + (Math.random() * 30 - 10) : baseBPM
+      };
+    }
+
+    // Initialize the dashboard
+    function initDashboard() {
+      initCharts();
+      
+      // Load initial data
+      fetchLatest();
+      
+      // Set up polling interval - update every 10 seconds
+      setInterval(fetchLatest, 10000);
+    }
+
+    // Show monitor assignment modal
+    function showAssignMonitorModal() {
+      // Fetch available monitors from backend
+      fetch('/api/monitors')
+        .then(res => res.json())
+        .then(monitors => {
+          const select = document.getElementById('monitorSelect');
+          select.innerHTML = '';
+          monitors.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.identifier;
+            opt.textContent = `Monitor ${m.identifier}` + (m.room ? ` (Room: ${m.room})` : ' (Unassigned)');
+            select.appendChild(opt);
+          });
+          // Show modal
+          const modal = new bootstrap.Modal(document.getElementById('assignMonitorModal'));
+          modal.show();
+        });
+    }
+
+    // Handle monitor assignment form submit
+    document.getElementById('assignMonitorForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const monitor_id = document.getElementById('monitorSelect').value;
+      const room_name = document.getElementById('roomSelect').value;
+      const patient_name = document.getElementById('patientNameInput').value;
+      fetch('/api/assign_monitor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monitor_id, room_name, patient_name })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const result = document.getElementById('assignResult');
+        if (data.success) {
+          result.textContent = `Monitor ${monitor_id} assigned to ${room_name}${patient_name ? ' (Patient: ' + patient_name + ')' : ''}.`;
+          // Clear form
+          document.getElementById('patientNameInput').value = '';
+          // Close modal and refresh room statuses so UI reflects the new assignment
+          const modalEl = document.getElementById('assignMonitorModal');
+          const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modalInstance.hide();
+          // Refresh room status indicators
+          if (typeof updateRoomStatuses === 'function') updateRoomStatuses();
+        } else {
+          result.textContent = `Error: ${data.error || 'Unknown error'}`;
+        }
+      })
+      .catch(err => {
+        document.getElementById('assignResult').textContent = 'Error: ' + err;
+      });
+    });
+
+    // Start the dashboard
+    document.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
