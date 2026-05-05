@@ -5,9 +5,12 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('api/latest', views.api_latest, name='api_latest'),
     path('api/history', views.api_history, name='api_history'),
+    path('api/patient_logs', views.api_patient_logs, name='api_patient_logs'),
+    path('api/patients_list', views.api_patients_list, name='api_patients_list'),
     path('api/assign_monitor', views.api_assign_monitor, name='api_assign_monitor'),
     path('api/monitors', views.api_monitors, name='api_monitors'),
     path('api/rooms', views.api_rooms, name='api_rooms'),
     path('api/patients', views.api_patients, name='api_patients'),
     path('api/set_room_patient', views.api_set_room_patient, name='api_set_room_patient'),
+    path('api/receive_reading', views.api_receive_reading, name='api_receive_reading'),
 ]

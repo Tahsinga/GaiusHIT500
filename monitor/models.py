@@ -26,6 +26,7 @@ class Reading(models.Model):
     temp_c = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     temp_f = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     bpm = models.IntegerField(null=True, blank=True)
+    spo2 = models.IntegerField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -38,7 +39,17 @@ class Reading(models.Model):
 
 class Monitor(models.Model):
     identifier = models.CharField(max_length=32, unique=True)
-    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='monitors')
+    room = models.OneToOneField(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='monitor')
 
     def __str__(self):
         return f"Monitor {self.identifier} -> {self.room.name if self.room else 'unassigned'}"
+    
+    def save(self, *args, **kwargs):
+        # If this monitor is being assigned to a room, unassign any other monitor from that room
+        if self.room:
+            # Find any other monitor assigned to this room
+            other_monitors = Monitor.objects.filter(room=self.room).exclude(pk=self.pk)
+            for other in other_monitors:
+                other.room = None
+                other.save()
+        super().save(*args, **kwargs)

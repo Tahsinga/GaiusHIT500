@@ -6,6 +6,7 @@ import datetime
 import requests
 import json
 from pathlib import Path
+
 try:
     import serial
     from serial.tools import list_ports
