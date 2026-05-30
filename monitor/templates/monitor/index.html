@@ -1361,30 +1361,53 @@
     return false;
   }
   
-  // Generate and play alert sound using Web Audio API
-  function playAlertSound() {
-    if(!dangerThresholds.soundEnabled) return;
-    
-    // Initialize audio context if needed
+  let alertIntervalId = null;
+
+  // Start the danger alarm loop and repeat until danger clears
+  function startAlertSoundLoop() {
+    if (!dangerThresholds.soundEnabled) return;
     initAudioContext();
-    
     if (!audioContext) {
       console.warn('Audio context not available');
       return;
     }
-    
-    // Ensure audio context is running
+
     if (audioContext.state === 'suspended') {
       audioContext.resume().then(() => {
-        playSoundInternal();
+        if (!alertIntervalId) {
+          playSoundInternal();
+          alertIntervalId = setInterval(playSoundInternal, 1200);
+        }
       }).catch(e => {
         console.warn('Could not resume audio context:', e);
       });
-    } else {
-      playSoundInternal();
+      return;
+    }
+
+    if (alertIntervalId) {
+      return;
+    }
+
+    playSoundInternal();
+    alertIntervalId = setInterval(playSoundInternal, 1200);
+  }
+
+  function stopAlertSoundLoop() {
+    if (alertIntervalId) {
+      clearInterval(alertIntervalId);
+      alertIntervalId = null;
     }
   }
-  
+
+  function updateAlertSoundState() {
+    const hasDanger = Array.from(roomDangerState.values()).some(Boolean);
+    if (hasDanger) {
+      startAlertSoundLoop();
+    } else {
+      stopAlertSoundLoop();
+    }
+  }
+
   // Internal function to actually play the sound
   function playSoundInternal() {
     try {
@@ -1414,6 +1437,25 @@
       console.log('Alert sound played successfully');
     } catch(e) {
       console.warn('Could not play alert sound:', e);
+    }
+  }
+
+  // Single alert sound playback used by the test button
+  function playAlertSound() {
+    if(!dangerThresholds.soundEnabled) return;
+    initAudioContext();
+    if (!audioContext) {
+      console.warn('Audio context not available');
+      return;
+    }
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        playSoundInternal();
+      }).catch(e => {
+        console.warn('Could not resume audio context for test sound:', e);
+      });
+    } else {
+      playSoundInternal();
     }
   }
   
@@ -1675,10 +1717,11 @@
       // Check for danger condition
       const isDanger = isDangerousReading(displayTemp, displayBpm, displaySpo2);
       const wasDanger = roomDangerState.get(room) || false;
-      if(isDanger && !wasDanger) {
-        playAlertSound();
+      if (isDanger && !wasDanger) {
+        startAlertSoundLoop();
       }
       roomDangerState.set(room, isDanger);
+      updateAlertSoundState();
       
       const card = document.createElement('div');
       card.className = `room-card-nice${isDanger ? ' danger' : ''}`;
@@ -2025,10 +2068,11 @@
     const wasDanger = roomDangerState.get(room) || false;
     
     // Update danger state and play sound on transition to danger
-    if(isDanger && !wasDanger) {
-      playAlertSound();
+    if (isDanger && !wasDanger) {
+      startAlertSoundLoop();
     }
     roomDangerState.set(room, isDanger);
+    updateAlertSoundState();
     
     // Apply danger styling to card
     if(isDanger) {
