@@ -11,9 +11,9 @@
 // ============================================
 // CONFIGURATION
 // ============================================
-const char* ssid = "TASHINGA";
+const char* ssid = "Wifi_123";
 const char* password = "1234567890";
-const char* server_ip = "172.16.9.17";
+const char* server_ip = "172.16.13.252";
 const int server_port = 8000;
 const char* monitor_id = "1";
 
